@@ -516,6 +516,9 @@
             line-height: 1.3;
             color: #333;
             --cv-color: #20b2aa;
+            --cv-section-spacing: 20px;
+            --cv-item-spacing: 12px;
+            --cv-page-margin: 20px;
         }
 
         .cv-container {
@@ -525,18 +528,18 @@
 
         .cv-left {
             width: 65%;
-            padding: 20px 15px;
+            padding: var(--cv-page-margin, 20px) var(--cv-page-margin, 15px);
         }
 
         .cv-right {
             width: 35%;
             background-color: #f8f9fa;
-            padding: 20px 15px;
+            padding: var(--cv-page-margin, 20px) var(--cv-page-margin, 15px);
             border-left: 1px solid #e0e0e0;
         }
 
         .cv-header {
-            margin-bottom: 15px;
+            margin-bottom: var(--cv-section-spacing, 15px);
         }
 
         .cv-name {
@@ -563,7 +566,7 @@
         }
 
         .cv-section {
-            margin-bottom: 20px;
+            margin-bottom: var(--cv-section-spacing, 20px);
         }
 
         .cv-section-title {
@@ -577,7 +580,7 @@
         }
 
         .cv-edu-item, .cv-exp-item {
-            margin-bottom: 12px;
+            margin-bottom: var(--cv-item-spacing, 12px);
         }
 
         .cv-degree {
@@ -667,7 +670,7 @@
         }
 
         .cv-cert-item {
-            margin-bottom: 8px;
+            margin-bottom: var(--cv-item-spacing, 8px);
             font-size: 9pt;
         }
 
@@ -912,6 +915,23 @@
                             <label>Dimensione nome: <span id="nameSizeValue">24pt</span></label>
                             <input type="range" id="customNameSize" min="18" max="32" value="24" onchange="updateCustomization()">
                         </div>
+                        
+                        <div style="border-top: 1px solid var(--border); margin: 20px 0; padding-top: 20px;">
+                            <label style="color: var(--primary); font-weight: 600; margin-bottom: 12px; display: block;">📐 Spaziatura</label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Spazio tra sezioni: <span id="sectionSpacingValue">20px</span></label>
+                            <input type="range" id="customSectionSpacing" min="8" max="40" value="20" onchange="updateCustomization()">
+                        </div>
+                        <div class="form-group">
+                            <label>Spazio tra voci: <span id="itemSpacingValue">12px</span></label>
+                            <input type="range" id="customItemSpacing" min="4" max="24" value="12" onchange="updateCustomization()">
+                        </div>
+                        <div class="form-group">
+                            <label>Margini pagina: <span id="pageMarginValue">20px</span></label>
+                            <input type="range" id="customPageMargin" min="10" max="40" value="20" onchange="updateCustomization()">
+                        </div>
                     </div>
                 </div>
 
@@ -1061,7 +1081,10 @@
                 color: '#20b2aa',
                 font: 'Arial',
                 fontSize: 10,
-                nameSize: 24
+                nameSize: 24,
+                sectionSpacing: 20,
+                itemSpacing: 12,
+                pageMargin: 20
             },
             contact: {
                 fullName: 'NICOLA MANCONI',
@@ -1247,13 +1270,24 @@
         }
 
         function loadCustomization() {
-            const custom = cvData.customization || { color: '#20b2aa', font: 'Arial', fontSize: 10, nameSize: 24 };
+            const custom = cvData.customization || { 
+                color: '#20b2aa', font: 'Arial', fontSize: 10, nameSize: 24,
+                sectionSpacing: 20, itemSpacing: 12, pageMargin: 20
+            };
             document.getElementById('customColor').value = custom.color;
             document.getElementById('customFont').value = custom.font;
             document.getElementById('customFontSize').value = custom.fontSize;
             document.getElementById('customNameSize').value = custom.nameSize;
+            document.getElementById('customSectionSpacing').value = custom.sectionSpacing || 20;
+            document.getElementById('customItemSpacing').value = custom.itemSpacing || 12;
+            document.getElementById('customPageMargin').value = custom.pageMargin || 20;
+            
             document.getElementById('fontSizeValue').textContent = custom.fontSize + 'pt';
             document.getElementById('nameSizeValue').textContent = custom.nameSize + 'pt';
+            document.getElementById('sectionSpacingValue').textContent = (custom.sectionSpacing || 20) + 'px';
+            document.getElementById('itemSpacingValue').textContent = (custom.itemSpacing || 12) + 'px';
+            document.getElementById('pageMarginValue').textContent = (custom.pageMargin || 20) + 'px';
+            
             updateColorPresetActive(custom.color);
         }
 
@@ -1262,11 +1296,24 @@
             const font = document.getElementById('customFont').value;
             const fontSize = document.getElementById('customFontSize').value;
             const nameSize = document.getElementById('customNameSize').value;
+            const sectionSpacing = document.getElementById('customSectionSpacing').value;
+            const itemSpacing = document.getElementById('customItemSpacing').value;
+            const pageMargin = document.getElementById('customPageMargin').value;
             
-            cvData.customization = { color, font, fontSize: parseInt(fontSize), nameSize: parseInt(nameSize) };
+            cvData.customization = { 
+                color, font, 
+                fontSize: parseInt(fontSize), 
+                nameSize: parseInt(nameSize),
+                sectionSpacing: parseInt(sectionSpacing),
+                itemSpacing: parseInt(itemSpacing),
+                pageMargin: parseInt(pageMargin)
+            };
             
             document.getElementById('fontSizeValue').textContent = fontSize + 'pt';
             document.getElementById('nameSizeValue').textContent = nameSize + 'pt';
+            document.getElementById('sectionSpacingValue').textContent = sectionSpacing + 'px';
+            document.getElementById('itemSpacingValue').textContent = itemSpacing + 'px';
+            document.getElementById('pageMarginValue').textContent = pageMargin + 'px';
             
             updateColorPresetActive(color);
             saveData();
@@ -1717,7 +1764,10 @@
         function renderCVPreview() {
             const preview = document.getElementById('cvPreview');
             const photoSrc = cvData.photo.startsWith('data:') ? cvData.photo : cvData.photo;
-            const custom = cvData.customization || { color: '#20b2aa', font: 'Arial', fontSize: 10, nameSize: 24 };
+            const custom = cvData.customization || { 
+                color: '#20b2aa', font: 'Arial', fontSize: 10, nameSize: 24,
+                sectionSpacing: 20, itemSpacing: 12, pageMargin: 20
+            };
             
             // Apply customization via CSS variables
             preview.style.setProperty('--cv-color', custom.color);
@@ -1726,6 +1776,9 @@
             preview.style.setProperty('--cv-name-size', custom.nameSize + 'pt');
             preview.style.setProperty('--cv-subtitle-size', Math.round(custom.nameSize * 0.5) + 'pt');
             preview.style.setProperty('--cv-section-size', Math.round(custom.fontSize * 1.1) + 'pt');
+            preview.style.setProperty('--cv-section-spacing', (custom.sectionSpacing || 20) + 'px');
+            preview.style.setProperty('--cv-item-spacing', (custom.itemSpacing || 12) + 'px');
+            preview.style.setProperty('--cv-page-margin', (custom.pageMargin || 20) + 'px');
             
             preview.innerHTML = `
                 <div class="cv-container">
