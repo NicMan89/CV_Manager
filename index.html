@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CV Manager - Nicola Manconi</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -283,6 +283,49 @@
 
         .entry-item:last-child {
             margin-bottom: 0;
+        }
+
+        /* Drag and drop styles */
+        .entry-item.draggable {
+            padding-left: 44px;
+        }
+
+        .drag-handle {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: grab;
+            color: var(--text-muted);
+            font-size: 1.2rem;
+            user-select: none;
+            transition: color 0.2s;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            line-height: 1;
+        }
+
+        .drag-handle:hover {
+            color: var(--primary);
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background: var(--primary-light);
+            border: 2px dashed var(--primary);
+        }
+
+        .sortable-chosen {
+            box-shadow: 0 8px 24px rgba(32, 178, 170, 0.3);
+        }
+
+        .sortable-drag {
+            opacity: 0.9;
         }
 
         .entry-header {
@@ -1513,7 +1556,8 @@
         function renderEducationList() {
             const container = document.getElementById('educationList');
             container.innerHTML = cvData.education.map(item => `
-                <div class="entry-item">
+                <div class="entry-item draggable" data-id="${item.id}">
+                    <div class="drag-handle" title="Trascina per riordinare">⠿</div>
                     <div class="entry-header">
                         <div>
                             <div class="entry-title">${item.degree}</div>
@@ -1528,12 +1572,14 @@
                     </div>
                 </div>
             `).join('');
+            initSortable('educationList', 'education');
         }
 
         function renderExperienceList() {
             const container = document.getElementById('experienceList');
             container.innerHTML = cvData.experience.map(item => `
-                <div class="entry-item">
+                <div class="entry-item draggable" data-id="${item.id}">
+                    <div class="drag-handle" title="Trascina per riordinare">⠿</div>
                     <div class="entry-header">
                         <div>
                             <div class="entry-subtitle">${item.company}</div>
@@ -1549,6 +1595,42 @@
                     ${item.description ? `<div class="entry-description">${item.description.substring(0, 150)}...</div>` : ''}
                 </div>
             `).join('');
+            initSortable('experienceList', 'experience');
+        }
+
+        // Sortable instances tracker
+        const sortableInstances = {};
+
+        function initSortable(containerId, dataKey) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            
+            // Destroy existing instance to avoid duplicates
+            if (sortableInstances[containerId]) {
+                sortableInstances[containerId].destroy();
+            }
+            
+            sortableInstances[containerId] = Sortable.create(container, {
+                handle: '.drag-handle',
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                onEnd: function(evt) {
+                    // Reorder the data array based on new DOM order
+                    const newOrder = Array.from(container.children).map(child => 
+                        parseInt(child.getAttribute('data-id'))
+                    );
+                    
+                    const reordered = newOrder.map(id => 
+                        cvData[dataKey].find(item => item.id === id)
+                    ).filter(Boolean);
+                    
+                    cvData[dataKey] = reordered;
+                    saveData();
+                    renderCVPreview();
+                }
+            });
         }
 
         function renderSkillsList() {
